@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import os
 from prompt_toolkit.application import get_app, Application
 from prompt_toolkit.layout import Layout
@@ -7,7 +8,7 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.styles import Style
 
 
-def check_output_dir(working_dir="."):
+def check_output_dir(working_dir=".", existing_files_action=None):
     os.system('cls' if os.name == 'nt' else 'clear')
     
     output_dir = os.path.join(working_dir, "拆分")
@@ -19,6 +20,25 @@ def check_output_dir(working_dir="."):
     # 如果目录为空，直接返回继续执行
     if not existing_files:
         return True
+    
+    # 如果配置中已指定处理方式，则直接执行
+    if existing_files_action:
+        if existing_files_action == "exit":
+            print("根据预配置，退出程序以避免覆盖现有文件。")
+            return False
+        elif existing_files_action == "delete":
+            print("根据预配置，正在删除现有文件...")
+            for f in existing_files:
+                try:
+                    os.remove(os.path.join(output_dir, f))
+                    print(f"  已删除: {f}")
+                except Exception as e:
+                    print(f"  删除 {f} 失败: {e}")
+            print("所有现有文件已删除。")
+            return True
+        elif existing_files_action == "overwrite":
+            print("根据预配置，将直接覆盖现有文件。")
+            return True
     
     # 如果目录不为空，显示提示并提供选项
     print(f"警告: 输出目录 '{output_dir}' 中已存在以下文件:")
@@ -89,7 +109,16 @@ def check_output_dir(working_dir="."):
         return False
 
 
-def choose_files(files):
+def choose_files(files, file_selection_mode=None):
+    # 如果配置中已指定文件选择模式，则直接执行
+    if file_selection_mode:
+        if file_selection_mode == "all":
+            print("根据预配置，自动选择所有文件。")
+            return files
+        elif file_selection_mode == "select":
+            # 继续执行手动选择流程
+            pass
+    
     os.system('cls' if os.name == 'nt' else 'clear')
     
     if not files:

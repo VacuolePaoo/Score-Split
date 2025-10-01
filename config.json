@@ -6,7 +6,10 @@
             "class_column": 3,
             "header_row": 2,
             "student_id_column": 1,
-            "ignore_class_column": true
+            "ignore_class_column": true,
+            "existing_files_action": "delete",
+            "file_selection_mode": "all",
+            "auto_detect_directory": true
         }
     ]
 }

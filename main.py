@@ -41,7 +41,10 @@ def load_config():
                     "class_column": 3,
                     "header_row": 2,
                     "student_id_column": None,
-                    "ignore_class_column": False
+                    "ignore_class_column": False,
+                    "existing_files_action": None,
+                    "file_selection_mode": None,
+                    "auto_detect_directory": False
                 }
             ]
         }
@@ -272,18 +275,34 @@ def main():
         else:
             print("配置选择无效，使用自定义配置。")
     
-    working_dir, mode = choose_working_directory()
-    if mode == "exit":
-        print("程序已退出。")
-        return
-    if not working_dir:
-        print("未选择有效的工作目录，程序退出。")
-        return
+    # 获取预配置中的自动检测目录设置
+    auto_detect_directory = False
+    if preset_config and "auto_detect_directory" in preset_config:
+        auto_detect_directory = preset_config["auto_detect_directory"]
     
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"工作目录: {os.path.abspath(working_dir)}")
+    # 如果配置了自动检测目录，则直接使用当前目录
+    if auto_detect_directory:
+        working_dir = "."
+        mode = "current"
+        print(f"自动检测到工作目录: {os.path.abspath(working_dir)}")
+    else:
+        working_dir, mode = choose_working_directory()
+        if mode == "exit":
+            print("程序已退出。")
+            return
+        if not working_dir:
+            print("未选择有效的工作目录，程序退出。")
+            return
+        
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"工作目录: {os.path.abspath(working_dir)}")
     
-    if not check_output_dir(working_dir):
+    # 获取预配置中的现有文件处理方式
+    existing_files_action = None
+    if preset_config and "existing_files_action" in preset_config:
+        existing_files_action = preset_config["existing_files_action"]
+    
+    if not check_output_dir(working_dir, existing_files_action):
         return
 
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -292,7 +311,12 @@ def main():
     for f in files:
         print(f"  - {f}")
     
-    selected = choose_files(files)
+    # 获取预配置中的文件选择模式
+    file_selection_mode = None
+    if preset_config and "file_selection_mode" in preset_config:
+        file_selection_mode = preset_config["file_selection_mode"]
+    
+    selected = choose_files(files, file_selection_mode)
     if selected == "exit":
         print("程序已退出。")
         return
