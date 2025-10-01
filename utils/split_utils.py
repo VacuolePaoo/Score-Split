@@ -146,14 +146,10 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
                                 class_data[class_name][subject].extend(rows)
                         
                         # 保存表头（假设所有同名学科的表头相同）
-                        for subject, header in file_class_data.items():
-                            if subject in file_class_data[subject]:  # 确保学科有数据
-                                subject_headers[subject] = subject_header
+                        subject_headers[subject] = subject_header
                         
                         stats["processed_files"] += 1
                         stats["total_rows"] += row_count
-                        
-                        # 移除了进度条显示，以提高运行速度
                         
             except Exception as e:
                 print(f"\n处理文件 {file} 时出错: {e}，跳过该文件")
@@ -179,17 +175,9 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
         
         # 按照指定顺序创建sheet
         subject_order = ["语文", "数学", "外语", "物理", "化学", "生物", "历史", "地理", "政治"]
-        ordered_subjects = []
-        
-        # 先添加按指定顺序排列的学科
-        for subject in subject_order:
-            if subject in subjects:
-                ordered_subjects.append(subject)
-        
-        # 再添加其他学科
-        for subject in subjects:
-            if subject not in ordered_subjects:
-                ordered_subjects.append(subject)
+        ordered_subjects = [subject for subject in subject_order if subject in subjects]
+        # 添加其他学科
+        ordered_subjects.extend([subject for subject in subjects if subject not in ordered_subjects])
         
         # 创建sheet并写入数据
         for subject in ordered_subjects:
