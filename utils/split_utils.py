@@ -150,6 +150,8 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
                         stats["processed_files"] += 1
                         stats["total_rows"] += row_count
                         
+                        # 移除了进度条显示，以提高运行速度
+                        
             except Exception as e:
                 print(f"\n处理文件 {file} 时出错: {e}，跳过该文件")
                 stats["skipped_files"] += 1
@@ -166,11 +168,11 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
     # 保存每个班的文件
     total_classes = len(sorted_classes)
     for idx, cls in enumerate(sorted_classes, 1):
-        print(f"\r正在保存班级文件 ({idx}/{total_classes}): {cls}.xlsx", end="", flush=True)
+        
         subjects = class_data[cls]
         out_file = os.path.join(output_dir, f"{cls}.xlsx")
-        out_wb = Workbook()
-        out_wb.remove(out_wb.active)  # 删除默认sheet
+        # 使用write_only模式提高写入性能
+        out_wb = Workbook(write_only=True)
         
         # 按照指定顺序创建sheet
         subject_order = ["语文", "数学", "外语", "物理", "化学", "生物", "历史", "地理", "政治"]
@@ -201,7 +203,8 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
                 if subject in subject_headers:
                     ws.append(subject_headers[subject])
                 for row in rows:
-                    ws.append(list(row))  # 转换为列表以确保兼容性
+                    # 直接写入元组数据，避免转换为列表的开销
+                    ws.append(row)
         
         # 只有当工作簿有工作表时才保存
         if out_wb.worksheets:
