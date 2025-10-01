@@ -32,7 +32,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.application import Application, get_app
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Layout
-from prompt_toolkit.widgets import CheckboxList, Button, Label, Box, Frame, RadioList
+from prompt_toolkit.widgets import CheckboxList, Button, Label, Box, Frame, RadioList, TextArea
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.styles import Style
 # 移除了WordCompleter的导入，因为我们不再需要自动补全功能
@@ -41,16 +41,88 @@ from prompt_toolkit.styles import Style
 warnings.filterwarnings("ignore")
 
 
-def list_excel_files():
-    files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
+def choose_working_directory():
+    """
+    让用户选择工作目录：扫描当前文件夹或手动输入路径
+    """
+    # 创建选项对话框
+    values = [
+        ("current", "扫描本文件夹下工作簿"),
+        ("manual", "手动输入文件夹路径")
+    ]
+    radio_list = RadioList(values=values)
+    radio_list.current_value = "current"  # 默认选择当前文件夹
+    
+    def on_confirm():
+        get_app().exit(result=radio_list.current_value)
+    
+    def on_cancel():
+        get_app().exit(result=None)
+    
+    btn_confirm = Button(text="确认", handler=on_confirm)
+    btn_cancel = Button(text="取消", handler=on_cancel)
+    
+    # 创建按键绑定
+    kb = KeyBindings()
+    
+    @kb.add('enter')
+    def _(event):
+        # 回车：确认选择
+        get_app().exit(result=radio_list.current_value)
+    
+    # 创建布局
+    style = Style.from_dict({
+        "button.focused": "reverse",
+    })
+    
+    body = HSplit([
+        Label("请选择工作目录:", dont_extend_height=True),
+        Window(height=1, char="-"),
+        Box(body=radio_list, padding=1),
+        Window(height=1, char="-"),
+        VSplit([btn_confirm, btn_cancel], padding=3),
+    ])
+    
+    application = Application(
+        layout=Layout(body, focused_element=radio_list),
+        key_bindings=kb,
+        mouse_support=True,
+        full_screen=False,
+        style=style,
+    )
+    
+    choice = application.run()
+    
+    if not choice:
+        return None, None
+    
+    if choice == "current":
+        return ".", "current"
+    else:
+        # 手动输入路径
+        path = prompt("请输入文件夹路径 (支持拖入文件夹获取路径): ").strip().strip('"\'')
+        if not os.path.exists(path):
+            print(f"路径不存在: {path}")
+            return None, None
+        if not os.path.isdir(path):
+            print(f"路径不是文件夹: {path}")
+            return None, None
+        return path, "manual"
+
+
+def list_excel_files(directory="."):
+    """
+    列出指定目录下的所有xlsx文件
+    """
+    files = [f for f in os.listdir(directory) if f.endswith('.xlsx')]
     return files
 
 
-def check_output_dir():
+def check_output_dir(working_dir="."):
     """
     检查输出目录是否存在文件，并根据情况提供用户选项
     """
-    output_dir = "拆分"
+    output_dir = os.path.join(working_dir, "拆分")
     os.makedirs(output_dir, exist_ok=True)
     
     # 检查目录中是否存在任何文件
@@ -228,16 +300,18 @@ def ask_number(prompt_text):
     return int(prompt(prompt_text))  # 移除了completer参数
 
 
-def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_col):
-    output_dir = "拆分"
+def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_col, working_dir="."):
+    output_dir = os.path.join(working_dir, "拆分")
     os.makedirs(output_dir, exist_ok=True)
 
     class_data = {}  # {class_name: {subject: [rows]}}
     subject_headers = {}  # {subject: header}
 
     for file in selected_files:
+        # 构造完整的文件路径
+        full_file_path = os.path.join(working_dir, file)
         subject = os.path.splitext(file)[0]  # 文件名 = 学科
-        wb = load_workbook(file, read_only=False)
+        wb = load_workbook(full_file_path, read_only=False)
         
         # 使用指定索引获取sheet
         sheets = wb.sheetnames
@@ -295,32 +369,40 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
 
 
 def main():
-    # 步骤1: 检查输出目录
-    if not check_output_dir():
+    # 步骤1: 选择工作目录
+    working_dir, mode = choose_working_directory()
+    if not working_dir:
+        print("未选择有效的工作目录，程序退出。")
+        return
+    
+    print(f"工作目录: {os.path.abspath(working_dir)}")
+    
+    # 步骤2: 检查输出目录
+    if not check_output_dir(working_dir):
         return
 
-    # 步骤2: 扫描当前目录，获取所有xlsx文件
-    files = list_excel_files()
+    # 步骤3: 扫描指定目录，获取所有xlsx文件
+    files = list_excel_files(working_dir)
     print("找到以下Excel文件:")
     for f in files:
         print(f"  - {f}")
     
     
-    # 步骤3: 让用户选择要处理的文件
+    # 步骤4: 让用户选择要处理的文件
     selected = choose_files(files)
     if not selected:
         print("未选择文件，退出。")
         return
 
-    # 步骤4: 获取第一个文件的sheet列表并让用户输入序号
-    first_file = selected[0]
+    # 步骤5: 获取第一个文件的sheet列表并让用户输入序号
+    first_file = os.path.join(working_dir, selected[0])
     sheets = list_all_sheets(first_file)
     sheet_index, sheet_name = ask_sheet_index(sheets)
 
-    # 步骤5: 询问用户表头所在行数
+    # 步骤6: 询问用户表头所在行数
     header_row = ask_number("请输入表头所在行号: ")
     
-    # 步骤6: 检索表头行内容并询问用户班级列所在列数
+    # 步骤7: 检索表头行内容并询问用户班级列所在列数
     # 显示第一个文件的表头作为示例
     wb = load_workbook(first_file, read_only=True)
     ws = wb[sheet_name]
@@ -333,8 +415,8 @@ def main():
     
     class_col = ask_number("请输入班级所在列号: ")
 
-    # 步骤7-9: 拆分并保存文件
-    split_and_save(selected, sheet_index, sheet_name, header_row, class_col)
+    # 步骤8-10: 拆分并保存文件
+    split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir)
     print("拆分完成，结果保存在 '拆分' 文件夹中。")
 
 
