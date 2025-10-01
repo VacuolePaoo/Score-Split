@@ -59,14 +59,10 @@ def choose_working_directory():
     def on_confirm():
         get_app().exit(result=radio_list.current_value)
     
-    def on_cancel():
-        get_app().exit(result=None)
-    
     def on_exit():
         get_app().exit(result="exit")
     
     btn_confirm = Button(text="确认", handler=on_confirm)
-    btn_cancel = Button(text="取消", handler=on_cancel)
     btn_exit = Button(text="退出", handler=on_exit)
     
     # 移除按键绑定，仅保留鼠标支持
@@ -80,7 +76,7 @@ def choose_working_directory():
         Window(height=1, char="-"),
         Box(body=radio_list, padding=1),
         Window(height=1, char="-"),
-        VSplit([btn_confirm, btn_cancel, btn_exit], padding=3),
+        VSplit([btn_confirm, btn_exit], padding=3),
     ])
     
     application = Application(
@@ -155,14 +151,10 @@ def check_output_dir(working_dir="."):
     def on_confirm():
         get_app().exit(result=radio_list.current_value)
     
-    def on_cancel():
-        get_app().exit(result="exit")  # 取消操作等同于选择退出
-    
     def on_exit():
         get_app().exit(result="exit")
     
     btn_confirm = Button(text="确认", handler=on_confirm)
-    btn_cancel = Button(text="取消", handler=on_cancel)
     btn_exit = Button(text="退出", handler=on_exit)
     
     # 移除按键绑定，仅保留鼠标支持
@@ -176,7 +168,7 @@ def check_output_dir(working_dir="."):
         Window(height=1, char="-"),
         Box(body=radio_list, padding=1),
         Window(height=1, char="-"),
-        VSplit([btn_confirm, btn_cancel, btn_exit], padding=3),
+        VSplit([btn_confirm, btn_exit], padding=3),
     ])
     
     application = Application(
@@ -226,14 +218,10 @@ def choose_files(files):
     def on_next():
         get_app().exit(result=list(checkbox.current_values or []))
     
-    def on_cancel():
-        get_app().exit(result=[])
-    
     def on_exit():
         get_app().exit(result="exit")
     
     btn_next = Button(text="下一步", handler=on_next)
-    btn_cancel = Button(text="取消", handler=on_cancel)
     btn_select_all = Button(text="全选", handler=lambda: setattr(checkbox, 'current_values', [v for _, v in values]))
     btn_exit = Button(text="退出", handler=on_exit)
     
@@ -248,7 +236,7 @@ def choose_files(files):
         Window(height=1, char="-"),
         Box(body=checkbox, padding=1),
         Window(height=1, char="-"),
-        VSplit([btn_select_all, btn_next, btn_cancel, btn_exit], padding=3),
+        VSplit([btn_select_all, btn_next, btn_exit], padding=3),
     ])
     
     application = Application(
@@ -287,14 +275,10 @@ def choose_sheet(sheets):
     def on_confirm():
         get_app().exit(result=radio_list.current_value)
     
-    def on_cancel():
-        get_app().exit(result=None)
-    
     def on_exit():
         get_app().exit(result="exit")
     
     btn_confirm = Button(text="确认", handler=on_confirm)
-    btn_cancel = Button(text="取消", handler=on_cancel)
     btn_exit = Button(text="退出", handler=on_exit)
     
     # 移除按键绑定，仅保留鼠标支持
@@ -308,7 +292,7 @@ def choose_sheet(sheets):
         Window(height=1, char="-"),
         Box(body=radio_list, padding=1),
         Window(height=1, char="-"),
-        VSplit([btn_confirm, btn_cancel, btn_exit], padding=3),
+        VSplit([btn_confirm, btn_exit], padding=3),
     ])
     
     application = Application(
@@ -373,14 +357,10 @@ def choose_class_column(header_row_data):
     def on_confirm():
         get_app().exit(result=radio_list.current_value)
     
-    def on_cancel():
-        get_app().exit(result=None)
-    
     def on_exit():
         get_app().exit(result="exit")
     
     btn_confirm = Button(text="确认", handler=on_confirm)
-    btn_cancel = Button(text="取消", handler=on_cancel)
     btn_exit = Button(text="退出", handler=on_exit)
     
     style = Style.from_dict({
@@ -392,7 +372,7 @@ def choose_class_column(header_row_data):
         Window(height=1, char="-"),
         Box(body=radio_list, padding=1),
         Window(height=1, char="-"),
-        VSplit([btn_confirm, btn_cancel, btn_exit], padding=3),
+        VSplit([btn_confirm, btn_exit], padding=3),
     ])
     
     application = Application(
@@ -581,50 +561,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
