@@ -8,6 +8,10 @@ on:
       - 'main.py'
       - 'utils/**'
       - 'config.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-and-release:
@@ -40,21 +44,10 @@ jobs:
     
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: ncipollo/release-action@v1
       with:
-        tag_name: v${{ github.run_number }}-${{ env.sha_short }}
-        release_name: Release v${{ github.run_number }} (${{ env.sha_short }})
+        tag: v${{ github.run_number }}-${{ env.sha_short }}
+        name: Release v${{ github.run_number }} (${{ env.sha_short }})
         draft: false
         prerelease: false
-    
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/score-split.zip
-        asset_name: score-split.zip
-        asset_content_type: application/zip
+        artifacts: "./release/score-split.zip"
