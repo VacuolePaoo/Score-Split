@@ -9,7 +9,7 @@ from datetime import datetime
 from openpyxl import load_workbook, Workbook
 
 
-def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_col, working_dir="."):
+def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_col, working_dir=".", student_id_col=None, ignore_class_col=False):
     output_dir = os.path.join(working_dir, "拆分")
     os.makedirs(output_dir, exist_ok=True)
 
@@ -38,7 +38,21 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
 
         # 提取表头（每个学科的表头可能不同）
         header = list(ws.iter_rows(min_row=header_row, max_row=header_row, values_only=True))[0]
-        subject_headers[subject] = header
+        
+        # 如果指定了学号列或需要忽略班级列，则从表头中移除相应列
+        if student_id_col is not None or ignore_class_col:
+            modified_header = []
+            for i, cell in enumerate(header):
+                # 如果指定了学号列且当前列是学号列，则跳过
+                if student_id_col is not None and i + 1 == student_id_col:
+                    continue
+                # 如果需要忽略班级列且当前列是班级列，则跳过
+                if ignore_class_col and i + 1 == class_col:
+                    continue
+                modified_header.append(cell)
+            subject_headers[subject] = modified_header
+        else:
+            subject_headers[subject] = header
 
         # 提取数据
         rows = list(ws.iter_rows(values_only=True))
@@ -51,7 +65,21 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
                 class_data[class_name] = {}
             if subject not in class_data[class_name]:
                 class_data[class_name][subject] = []
-            class_data[class_name][subject].append(row)
+            
+            # 如果指定了学号列或需要忽略班级列，则从数据行中移除相应列
+            if student_id_col is not None or ignore_class_col:
+                modified_row = []
+                for i, cell in enumerate(row):
+                    # 如果指定了学号列且当前列是学号列，则跳过
+                    if student_id_col is not None and i + 1 == student_id_col:
+                        continue
+                    # 如果需要忽略班级列且当前列是班级列，则跳过
+                    if ignore_class_col and i + 1 == class_col:
+                        continue
+                    modified_row.append(cell)
+                class_data[class_name][subject].append(tuple(modified_row))
+            else:
+                class_data[class_name][subject].append(row)
 
         wb.close()
 

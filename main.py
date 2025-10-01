@@ -22,6 +22,82 @@ from utils.split_utils import split_and_save
 warnings.filterwarnings("ignore")
 
 
+def ask_student_id_column(header_row_data):
+    """
+    询问用户学号所在列，如果用户输入数字则忽略该列
+    """
+    # 清屏
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    print("学号列忽略选项:")
+    print("表头行内容:")
+    for i, cell in enumerate(header_row_data[:10]):
+        print(f"  列{i+1}: {cell}")
+    
+    while True:
+        user_input = prompt("请输入学号所在列号 (直接按回车表示不忽略任何列): ").strip()
+        if user_input.lower() == 'exit':
+            return 'exit'
+        if user_input == "":
+            return None
+        try:
+            col_num = int(user_input)
+            if 1 <= col_num <= len(header_row_data):
+                return col_num
+            else:
+                print(f"列号必须在1到{len(header_row_data)}之间，请重新输入！")
+        except ValueError:
+            print("输入无效，请输入一个有效的数字或直接按回车！")
+
+
+def ask_ignore_class_column(header_row_data, class_col):
+    """
+    询问用户是否忽略班级列，使用按钮交互方式
+    """
+    # 清屏
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    def on_yes():
+        get_app().exit(result=True)
+    
+    def on_no():
+        get_app().exit(result=False)
+    
+    def on_exit():
+        get_app().exit(result="exit")
+    
+    # 创建按钮
+    btn_yes = Button(text="是，忽略班级列", handler=on_yes)
+    btn_no = Button(text="否，保留班级列", handler=on_no)
+    btn_exit = Button(text="退出", handler=on_exit)
+    
+    # 创建界面布局
+    style = Style.from_dict({
+        "button.focused": "fg:ansiblue bg:ansiwhite",
+    })
+    
+    body = HSplit([
+        Label("班级列忽略选项:", dont_extend_height=True),
+        Window(height=1, char="-"),
+        Label(f"已选择的班级列为: 列{class_col}: {header_row_data[class_col-1]}", dont_extend_height=True),
+        Window(height=1, char=" "),
+        Label("是否忽略班级列?", dont_extend_height=True),
+        Window(height=1, char="-"),
+        VSplit([btn_yes, btn_no], padding=3),
+        Window(height=1, char="-"),
+        btn_exit,
+    ])
+    
+    application = Application(
+        layout=Layout(body),
+        mouse_support=True,
+        full_screen=False,
+        style=style,
+    )
+    
+    return application.run()
+
+
 def main():
     # 步骤1: 选择工作目录
     working_dir, mode = choose_working_directory()
@@ -102,14 +178,25 @@ def main():
         print("未选择班级列，退出。")
         return
 
+    # 新增步骤: 询问是否忽略学号列
+    student_id_col = ask_student_id_column(header_row_data)
+    if student_id_col == "exit":
+        print("程序已退出。")
+        return
+
+    # 新增步骤: 询问是否忽略班级列
+    ignore_class_col = ask_ignore_class_column(header_row_data, class_col)
+    if ignore_class_col == "exit":
+        print("程序已退出。")
+        return
+
     # 步骤8-10: 拆分并保存文件
     # 清屏并开始处理文件
     os.system('cls' if os.name == 'nt' else 'clear')
     print("开始拆分文件...")
-    split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir)
+    split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir, student_id_col, ignore_class_col)
     print("拆分完成，结果保存在 '拆分' 文件夹中。")
 
 
 if __name__ == "__main__":
     main()
-
