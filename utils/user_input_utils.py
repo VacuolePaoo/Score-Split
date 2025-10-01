@@ -25,19 +25,14 @@ def ask_number(prompt_text):
 
 
 def choose_class_column(header_row_data):
-    """
-    使用单选按钮让用户选择班级所在列
-    """
-    # 清屏
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    # 创建单选列表，最多显示前10列
     values = []
     for i, cell in enumerate(header_row_data[:10]):
         values.append((i+1, f"列{i+1}: {cell}"))
     
     radio_list = RadioList(values=values)
-    radio_list.current_value = 1  # 默认选择第一列
+    radio_list.current_value = 1
     
     def on_confirm():
         get_app().exit(result=radio_list.current_value)

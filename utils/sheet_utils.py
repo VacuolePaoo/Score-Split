@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Sheet工具模块
-处理Excel中sheet的选择功能
-"""
 
 import os
 from openpyxl import load_workbook
@@ -22,16 +18,11 @@ def list_all_sheets(file):
 
 
 def choose_sheet(sheets):
-    """
-    使用单选列表让用户选择学生得分sheet
-    """
-    # 清屏
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    # 创建单选对话框
     values = [(i, sheet) for i, sheet in enumerate(sheets)]
     radio_list = RadioList(values=values)
-    radio_list.current_value = 0  # 默认选择第一个
+    radio_list.current_value = 0
     
     def on_confirm():
         get_app().exit(result=radio_list.current_value)
@@ -42,7 +33,6 @@ def choose_sheet(sheets):
     btn_confirm = Button(text="确认", handler=on_confirm)
     btn_exit = Button(text="退出", handler=on_exit)
     
-    # 创建布局
     style = Style.from_dict({
         "button.focused": "reverse",
     })
@@ -81,7 +71,7 @@ def ask_sheet_index(sheets):
         try:
             index = int(prompt("请输入学生得分sheet的序号: "))
             if 1 <= index <= len(sheets):
-                return index-1, sheets[index-1]  # 返回索引和sheet名称
+                return index-1, sheets[index-1]
             else:
                 print(f"请输入1到{len(sheets)}之间的数字")
         except ValueError:

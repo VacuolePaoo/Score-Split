@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-目录工具模块
-处理工作目录选择和文件扫描功能
-"""
 
 import os
 from prompt_toolkit import prompt
@@ -14,19 +10,14 @@ from prompt_toolkit.styles import Style
 
 
 def choose_working_directory():
-    """
-    让用户选择工作目录：扫描当前文件夹或手动输入路径
-    """
-    # 清屏
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    # 创建选项对话框
     values = [
         ("current", "扫描本文件夹下工作簿"),
         ("manual", "手动输入文件夹路径")
     ]
     radio_list = RadioList(values=values)
-    radio_list.current_value = "current"  # 默认选择当前文件夹
+    radio_list.current_value = "current"
     
     def on_confirm():
         get_app().exit(result=radio_list.current_value)
@@ -37,7 +28,6 @@ def choose_working_directory():
     btn_confirm = Button(text="确认", handler=on_confirm)
     btn_exit = Button(text="退出", handler=on_exit)
     
-    # 创建布局
     style = Style.from_dict({
         "button.focused": "reverse",
     })
@@ -67,7 +57,6 @@ def choose_working_directory():
     if choice == "current":
         return ".", "current"
     else:
-        # 手动输入路径
         path = prompt("请输入文件夹路径 (支持拖入文件夹获取路径): ").strip().strip('"\'')
         if not os.path.exists(path):
             print(f"路径不存在: {path}")
@@ -79,8 +68,5 @@ def choose_working_directory():
 
 
 def list_excel_files(directory="."):
-    """
-    列出指定目录下的所有xlsx文件
-    """
     files = [f for f in os.listdir(directory) if f.endswith('.xlsx')]
     return files

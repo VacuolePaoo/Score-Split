@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-文件选择工具模块
-处理文件选择和输出目录检查功能
-"""
-
 import os
 from prompt_toolkit.application import get_app, Application
 from prompt_toolkit.layout import Layout
@@ -13,10 +8,6 @@ from prompt_toolkit.styles import Style
 
 
 def check_output_dir(working_dir="."):
-    """
-    检查输出目录是否存在文件，并根据情况提供用户选项
-    """
-    # 清屏
     os.system('cls' if os.name == 'nt' else 'clear')
     
     output_dir = os.path.join(working_dir, "拆分")
@@ -99,18 +90,15 @@ def check_output_dir(working_dir="."):
 
 
 def choose_files(files):
-    # 清屏
     os.system('cls' if os.name == 'nt' else 'clear')
     
     if not files:
         print("未找到任何xlsx文件")
         return []
     
-    # 创建自定义的checkboxlist_dialog
     values = [(f, f) for f in files]
     checkbox = CheckboxList(values=values)
     
-    # 创建按钮
     def on_next():
         get_app().exit(result=list(checkbox.current_values or []))
     
@@ -121,7 +109,6 @@ def choose_files(files):
     btn_select_all = Button(text="全选", handler=lambda: setattr(checkbox, 'current_values', [v for _, v in values]))
     btn_exit = Button(text="退出", handler=on_exit)
     
-    # 创建布局
     style = Style.from_dict({
         "button.focused": "reverse",
     })
