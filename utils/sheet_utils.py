@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+Sheet工具模块
+处理Excel中sheet的选择功能
+"""
 
 import os
 from openpyxl import load_workbook
@@ -11,7 +15,7 @@ from prompt_toolkit.styles import Style
 
 
 def list_all_sheets(file):
-    wb = load_workbook(file, read_only=True)
+    wb = load_workbook(file, read_only=True, data_only=True)
     sheets = wb.sheetnames
     wb.close()
     return sheets

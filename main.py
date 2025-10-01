@@ -353,7 +353,7 @@ def main():
             return
     
     os.system('cls' if os.name == 'nt' else 'clear')
-    wb = load_workbook(first_file, read_only=True)
+    wb = load_workbook(first_file, read_only=True, data_only=True)
     ws = wb[sheet_name]
     header_row_data = list(ws.iter_rows(min_row=header_row, max_row=header_row, values_only=True))[0]
     wb.close()
