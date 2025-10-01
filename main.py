@@ -44,7 +44,8 @@ def load_config():
                     "ignore_class_column": False,
                     "existing_files_action": None,
                     "file_selection_mode": None,
-                    "auto_detect_directory": False
+                    "auto_detect_directory": False,
+                    "show_subject_header": True
                 }
             ]
         }
@@ -188,6 +189,47 @@ def ask_ignore_class_column(header_row_data, class_col):
         Label(f"已选择的班级列为: 列{class_col}: {header_row_data[class_col-1]}", dont_extend_height=True),
         Window(height=1, char=" "),
         Label("是否忽略班级列?", dont_extend_height=True),
+        Window(height=1, char="-"),
+        VSplit([btn_yes, btn_no], padding=3),
+        Window(height=1, char="-"),
+        btn_exit,
+    ])
+    
+    application = Application(
+        layout=Layout(body),
+        mouse_support=True,
+        full_screen=False,
+        style=style,
+    )
+    
+    return application.run()
+
+
+def ask_show_subject_header():
+    """询问是否在每个sheet的头部显示学科和日期"""
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    def on_yes():
+        get_app().exit(result=True)
+    
+    def on_no():
+        get_app().exit(result=False)
+    
+    def on_exit():
+        get_app().exit(result="exit")
+    
+    btn_yes = Button(text="是", handler=on_yes)
+    btn_no = Button(text="否", handler=on_no)
+    btn_exit = Button(text="退出", handler=on_exit)
+    
+    style = Style.from_dict({
+        "button.focused": "fg:ansiblue bg:ansiwhite",
+    })
+    
+    body = HSplit([
+        Label("学科和日期显示选项:", dont_extend_height=True),
+        Window(height=1, char="-"),
+        Label("是否在每个学科sheet的头部显示学科名称和制表日期?", dont_extend_height=True),
         Window(height=1, char="-"),
         VSplit([btn_yes, btn_no], padding=3),
         Window(height=1, char="-"),
@@ -392,9 +434,24 @@ def main():
             print("程序已退出。")
             return
 
+    # 处理是否显示学科和日期头部的选项
+    if preset_config and "show_subject_header" in preset_config:
+        show_subject_header = preset_config["show_subject_header"]
+        print(f"使用预配置的学科和日期显示设置: {show_subject_header}")
+    else:
+        # 只有在自定义模式下才询问这个选项
+        if config_choice == "custom":
+            show_subject_header = ask_show_subject_header()
+            if show_subject_header == "exit":
+                print("程序已退出。")
+                return
+        else:
+            # 对于预设配置，默认显示学科和日期头部
+            show_subject_header = True
+
     os.system('cls' if os.name == 'nt' else 'clear')
     print("开始拆分文件...")
-    stats = split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir, student_id_col, ignore_class_col)
+    stats = split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir, student_id_col, ignore_class_col, show_subject_header)
     
     result = show_completion_options(working_dir, stats)
     if result == "open":

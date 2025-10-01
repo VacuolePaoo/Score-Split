@@ -9,7 +9,8 @@
             "ignore_class_column": true,
             "existing_files_action": "delete",
             "file_selection_mode": "all",
-            "auto_detect_directory": true
+            "auto_detect_directory": true,
+            "show_subject_header": false
         }
     ]
 }

@@ -18,6 +18,7 @@ def process_single_file(args):
     full_file_path = os.path.join(working_dir, file)
     
     # 使用只读模式打开工作簿以提高性能
+    # data_only=True 确保所有公式都转换为静态值
     wb = load_workbook(full_file_path, read_only=True, data_only=True)
     
     sheets = wb.sheetnames
@@ -49,7 +50,7 @@ def process_single_file(args):
     file_class_data = {}
     row_count = 0
     
-    # 使用values_only=True以提高性能
+    # 使用values_only=True以提高性能，确保获取的是静态值而不是公式
     for row in ws.iter_rows(min_row=header_row+1, values_only=True):
         if not row or not row[class_col - 1]:
             continue
@@ -85,7 +86,7 @@ def process_single_file(args):
     return (file_class_data, subject_header, row_count), None
 
 
-def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_col, working_dir=".", student_id_col=None, ignore_class_col=False):
+def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_col, working_dir=".", student_id_col=None, ignore_class_col=False, show_subject_header=True):
     output_dir = os.path.join(working_dir, "拆分")
     os.makedirs(output_dir, exist_ok=True)
 
@@ -184,12 +185,14 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
             if subject in subjects:  # 确保学科存在
                 rows = subjects[subject]
                 ws = out_wb.create_sheet(title=subject)
-                # 添加标题行，分别放在四个单元格中
-                title_row = [f"{subject}", f"{current_date}"]
-                # 根据表头长度调整标题行的长度
-                if subject in subject_headers and len(subject_headers[subject]) > len(title_row):
-                    title_row.extend([""] * (len(subject_headers[subject]) - len(title_row)))
-                ws.append(title_row)
+                # 根据show_subject_header参数决定是否添加标题行
+                if show_subject_header:
+                    # 添加标题行，分别放在四个单元格中
+                    title_row = [f"{subject}", f"{current_date}"]
+                    # 根据表头长度调整标题行的长度
+                    if subject in subject_headers and len(subject_headers[subject]) > len(title_row):
+                        title_row.extend([""] * (len(subject_headers[subject]) - len(title_row)))
+                    ws.append(title_row)
                 # 使用每个学科自己的表头
                 if subject in subject_headers:
                     ws.append(subject_headers[subject])
