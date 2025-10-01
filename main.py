@@ -91,7 +91,7 @@ def choose_config(config_data):
     body_elements = [
         Window(height=1, char="-"),
         Label("作者: VacuolePao", dont_extend_height=True),
-        Label("GitHub: https://github.com/VacuolePaoo/Score-Split", dont_extend_height=True),
+        Label("GitHub: https://github.com/VacuolePaoo/Score-Split/", dont_extend_height=True),
         Label("版本: 114514", dont_extend_height=True),
         Window(height=1, char="-"),
         Label("请选择要使用的配置:", dont_extend_height=True),
