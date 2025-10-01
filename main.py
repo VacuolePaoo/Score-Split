@@ -1,6 +1,7 @@
 import os
 import warnings
 import platform
+import json
 from datetime import datetime
 from openpyxl import load_workbook, Workbook
 from prompt_toolkit import prompt
@@ -21,6 +22,106 @@ from utils.split_utils import split_and_save
 
 # 忽略所有警告
 warnings.filterwarnings("ignore")
+
+
+def load_config():
+    """
+    加载配置文件
+    """
+    config_path = os.path.join(os.path.dirname(__file__), "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"配置文件读取失败: {e}")
+            return {"configs": []}
+    else:
+        # 如果配置文件不存在，创建一个默认的
+        default_config = {
+            "configs": [
+                {
+                    "name": "默认配置",
+                    "sheet_index": 0,
+                    "class_column": 2,
+                    "header_row": 1,
+                    "student_id_column": None,
+                    "ignore_class_column": False
+                }
+            ]
+        }
+        try:
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(default_config, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            print(f"创建默认配置文件失败: {e}")
+        return default_config
+
+
+def choose_config(config_data):
+    """
+    让用户选择使用已有配置还是自定义配置
+    """
+    # 清屏
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    configs = config_data.get("configs", [])
+    
+    if not configs:
+        return None
+    
+    def on_custom():
+        get_app().exit(result="custom")
+    
+    def on_exit():
+        get_app().exit(result="exit")
+    
+    # 创建配置选项
+    config_buttons = []
+    for i, config in enumerate(configs):
+        def make_handler(index):
+            def handler():
+                get_app().exit(result=index)
+            return handler
+        
+        btn = Button(text=config["name"], handler=make_handler(i))
+        config_buttons.append(btn)
+    
+    # 添加自定义和退出按钮
+    btn_custom = Button(text="自定义配置", handler=on_custom)
+    btn_exit = Button(text="退出", handler=on_exit)
+    
+    # 创建界面布局
+    style = Style.from_dict({
+        "button.focused": "fg:ansiblue bg:ansiwhite",
+    })
+    
+    body_elements = [
+        Label("选择配置:", dont_extend_height=True),
+        Window(height=1, char="-"),
+        Label("请选择要使用的配置:", dont_extend_height=True),
+    ]
+    
+    # 添加配置按钮（每行一个）
+    for btn in config_buttons:
+        body_elements.append(btn)
+    
+    body_elements.extend([
+        Window(height=1, char="-"),
+        btn_custom,
+        btn_exit,
+    ])
+    
+    body = HSplit(body_elements)
+    
+    application = Application(
+        layout=Layout(body),
+        mouse_support=True,
+        full_screen=False,
+        style=style,
+    )
+    
+    return application.run()
 
 
 def ask_student_id_column(header_row_data):
@@ -189,6 +290,27 @@ def show_completion_options(working_dir, stats):
 
 
 def main():
+    # 加载配置文件
+    config_data = load_config()
+    
+    # 选择配置
+    config_choice = choose_config(config_data)
+    preset_config = None
+    if config_choice == "exit":
+        print("程序已退出。")
+        return
+    elif config_choice == "custom":
+        # 使用自定义配置流程（原有流程）
+        pass
+    elif isinstance(config_choice, int):
+        # 使用预配置
+        configs = config_data.get("configs", [])
+        if 0 <= config_choice < len(configs):
+            preset_config = configs[config_choice]
+            print(f"使用预配置: {preset_config['name']}")
+        else:
+            print("配置选择无效，使用自定义配置。")
+    
     # 步骤1: 选择工作目录
     working_dir, mode = choose_working_directory()
     if mode == "exit":
@@ -229,22 +351,34 @@ def main():
     os.system('cls' if os.name == 'nt' else 'clear')
     first_file = os.path.join(working_dir, selected[0])
     sheets = list_all_sheets(first_file)
-    sheet_index, sheet_name = choose_sheet(sheets)
     
-    if sheet_index == "exit":
-        print("程序已退出。")
-        return
-    if sheet_index is None:
-        print("未选择sheet，退出。")
-        return
+    # 如果使用预配置，直接使用预配置的sheet索引
+    if preset_config:
+        sheet_index = preset_config["sheet_index"]  # sheet索引（从0开始）
+        sheet_name = sheets[sheet_index] if sheet_index < len(sheets) else sheets[0]  # 对应的sheet名称
+        print(f"使用预配置的sheet: {sheet_name}")
+    else:
+        sheet_index, sheet_name = choose_sheet(sheets)
+        
+        if sheet_index == "exit":
+            print("程序已退出。")
+            return
+        if sheet_index is None:
+            print("未选择sheet，退出。")
+            return
 
     # 步骤6: 询问用户表头所在行数
     # 清屏并询问表头行数
     os.system('cls' if os.name == 'nt' else 'clear')
-    header_row = ask_number("表头所在行号: ")
-    if header_row == 'exit':
-        print("程序已退出。")
-        return
+    # 如果使用预配置，直接使用预配置的表头行
+    if preset_config:
+        header_row = preset_config["header_row"]
+        print(f"使用预配置的表头行: {header_row}")
+    else:
+        header_row = ask_number("表头所在行号: ")
+        if header_row == 'exit':
+            print("程序已退出。")
+            return
     
     # 步骤7: 检索表头行内容并询问用户班级列所在列数
     # 清屏并显示表头内容
@@ -260,25 +394,40 @@ def main():
         print(f"  列{i+1}: {cell}")
     
     # 使用单选方式选择班级列
-    class_col = choose_class_column(header_row_data)
-    if class_col == "exit":
-        print("程序已退出。")
-        return
-    if class_col is None:
-        print("未选择班级列，退出。")
-        return
+    # 如果使用预配置，直接使用预配置的班级列
+    if preset_config:
+        class_col = preset_config["class_column"]
+        print(f"使用预配置的班级列: {class_col}")
+    else:
+        class_col = choose_class_column(header_row_data)
+        if class_col == "exit":
+            print("程序已退出。")
+            return
+        if class_col is None:
+            print("未选择班级列，退出。")
+            return
 
     # 新增步骤: 询问是否忽略学号列
-    student_id_col = ask_student_id_column(header_row_data)
-    if student_id_col == "exit":
-        print("程序已退出。")
-        return
+    # 如果使用预配置，直接使用预配置的学号列设置
+    if preset_config:
+        student_id_col = preset_config["student_id_column"]
+        print(f"使用预配置的学号列设置: {student_id_col}")
+    else:
+        student_id_col = ask_student_id_column(header_row_data)
+        if student_id_col == "exit":
+            print("程序已退出。")
+            return
 
     # 新增步骤: 询问是否忽略班级列
-    ignore_class_col = ask_ignore_class_column(header_row_data, class_col)
-    if ignore_class_col == "exit":
-        print("程序已退出。")
-        return
+    # 如果使用预配置，直接使用预配置的忽略班级列设置
+    if preset_config:
+        ignore_class_col = preset_config["ignore_class_column"]
+        print(f"使用预配置的忽略班级列设置: {ignore_class_col}")
+    else:
+        ignore_class_col = ask_ignore_class_column(header_row_data, class_col)
+        if ignore_class_col == "exit":
+            print("程序已退出。")
+            return
 
     # 步骤8-10: 拆分并保存文件
     # 清屏并开始处理文件
