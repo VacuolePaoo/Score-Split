@@ -2,10 +2,12 @@
 
 import os
 import threading
+import psutil
 from datetime import datetime
 from openpyxl import load_workbook, Workbook
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
+
 
 
 def process_single_file(args):
@@ -105,7 +107,8 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
     print(f"开始处理 {total_files} 个文件...")
     
     # 使用线程池处理文件以提高性能
-    max_workers = min(4, os.cpu_count() or 1)  # 限制最大线程数
+    # 使用所有逻辑核心来处理文件，提高处理速度
+    max_workers = psutil.cpu_count(logical=True) or 1
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # 准备任务参数
