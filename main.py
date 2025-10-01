@@ -1,5 +1,6 @@
 import os
 import warnings
+import platform
 from datetime import datetime
 from openpyxl import load_workbook, Workbook
 from prompt_toolkit import prompt
@@ -24,30 +25,58 @@ warnings.filterwarnings("ignore")
 
 def ask_student_id_column(header_row_data):
     """
-    询问用户学号所在列，如果用户输入数字则忽略该列
+    询问用户学号所在列，如果用户选择则忽略该列，使用按钮交互方式
     """
     # 清屏
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    print("学号列忽略选项:")
-    print("表头行内容:")
+    # 创建列选项
+    values = []
     for i, cell in enumerate(header_row_data[:10]):
-        print(f"  列{i+1}: {cell}")
+        values.append((i+1, f"列{i+1}: {cell}"))
     
-    while True:
-        user_input = prompt("请输入学号所在列号 (直接按回车表示不忽略任何列): ").strip()
-        if user_input.lower() == 'exit':
-            return 'exit'
-        if user_input == "":
-            return None
-        try:
-            col_num = int(user_input)
-            if 1 <= col_num <= len(header_row_data):
-                return col_num
-            else:
-                print(f"列号必须在1到{len(header_row_data)}之间，请重新输入！")
-        except ValueError:
-            print("输入无效，请输入一个有效的数字或直接按回车！")
+    # 创建单选列表
+    radio_list = RadioList(values=values)
+    radio_list.current_value = 1  # 默认选择第一列
+    
+    def on_confirm():
+        get_app().exit(result=radio_list.current_value)
+    
+    def on_skip():
+        get_app().exit(result=None)
+    
+    def on_exit():
+        get_app().exit(result="exit")
+    
+    # 创建按钮
+    btn_confirm = Button(text="确认选择此列为学号列", handler=on_confirm)
+    btn_skip = Button(text="不忽略任何列", handler=on_skip)
+    btn_exit = Button(text="退出", handler=on_exit)
+    
+    # 创建界面布局
+    style = Style.from_dict({
+        "button.focused": "fg:ansiblue bg:ansiwhite",
+    })
+    
+    body = HSplit([
+        Label("学号列忽略选项:", dont_extend_height=True),
+        Window(height=1, char="-"),
+        Label("表头行内容:", dont_extend_height=True),
+        Box(body=radio_list, padding=1),
+        Window(height=1, char="-"),
+        VSplit([btn_confirm, btn_skip], padding=3),
+        Window(height=1, char="-"),
+        btn_exit,
+    ])
+    
+    application = Application(
+        layout=Layout(body, focused_element=radio_list),
+        mouse_support=True,
+        full_screen=False,
+        style=style,
+    )
+    
+    return application.run()
 
 
 def ask_ignore_class_column(header_row_data, class_col):
@@ -87,6 +116,67 @@ def ask_ignore_class_column(header_row_data, class_col):
         Window(height=1, char="-"),
         btn_exit,
     ])
+    
+    application = Application(
+        layout=Layout(body),
+        mouse_support=True,
+        full_screen=False,
+        style=style,
+    )
+    
+    return application.run()
+
+
+def show_completion_options(working_dir, stats):
+    """
+    显示处理完成后的操作选项和统计信息
+    """
+    # 清屏
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    output_dir = os.path.join(working_dir, "拆分")
+    
+    def on_open_folder():
+        # 打开输出文件夹
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(output_dir)
+        elif system == "Darwin":  # macOS
+            os.system(f"open '{output_dir}'")
+        else:  # Linux
+            os.system(f"xdg-open '{output_dir}'")
+        get_app().exit(result="open")
+    
+    def on_exit():
+        get_app().exit(result="exit")
+    
+    # 创建按钮
+    btn_open = Button(text="打开输出文件夹", handler=on_open_folder)
+    btn_exit = Button(text="退出", handler=on_exit)
+    
+    # 创建界面布局
+    style = Style.from_dict({
+        "button.focused": "fg:ansiblue bg:ansiwhite",
+    })
+    
+    # 统计信息显示
+    stats_labels = [
+        Label("处理完成!", dont_extend_height=True),
+        Window(height=1, char="-"),
+        Label(f"结果已保存在: {output_dir}", dont_extend_height=True),
+        Window(height=1, char="="),
+        Label("处理统计信息:", dont_extend_height=True),
+        Label(f"  处理文件数: {stats['processed_files']}/{stats['total_files']}", dont_extend_height=True),
+        Label(f"  跳过文件数: {stats['skipped_files']}", dont_extend_height=True),
+        Label(f"  生成班级数: {stats['generated_classes']}", dont_extend_height=True),
+        Label(f"  处理数据行数: {stats['total_rows']}", dont_extend_height=True),
+        Window(height=1, char="="),
+        Label("请选择操作:", dont_extend_height=True),
+        Window(height=1, char="-"),
+        VSplit([btn_open, btn_exit], padding=3),
+    ]
+    
+    body = HSplit(stats_labels)
     
     application = Application(
         layout=Layout(body),
@@ -194,8 +284,14 @@ def main():
     # 清屏并开始处理文件
     os.system('cls' if os.name == 'nt' else 'clear')
     print("开始拆分文件...")
-    split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir, student_id_col, ignore_class_col)
-    print("拆分完成，结果保存在 '拆分' 文件夹中。")
+    stats = split_and_save(selected, sheet_index, sheet_name, header_row, class_col, working_dir, student_id_col, ignore_class_col)
+    
+    # 显示处理完成后的选项和统计信息
+    result = show_completion_options(working_dir, stats)
+    if result == "open":
+        print("正在打开输出文件夹...")
+    elif result == "exit":
+        print("程序已退出。")
 
 
 if __name__ == "__main__":

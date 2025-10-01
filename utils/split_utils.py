@@ -16,6 +16,15 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
     class_data = {}  # {class_name: {subject: [rows]}}
     subject_headers = {}  # {subject: header}
     
+    # 统计信息
+    stats = {
+        "processed_files": 0,
+        "total_files": len(selected_files),
+        "generated_classes": 0,
+        "total_rows": 0,
+        "skipped_files": 0
+    }
+    
     total_files = len(selected_files)
     print(f"开始处理 {total_files} 个文件...")
     
@@ -33,6 +42,7 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
             ws = wb[sheets[sheet_index]]
         else:
             print(f"\n文件 {file} 没有足够多的sheet，跳过该文件")
+            stats["skipped_files"] += 1
             wb.close()
             continue
 
@@ -80,13 +90,17 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
                 class_data[class_name][subject].append(tuple(modified_row))
             else:
                 class_data[class_name][subject].append(row)
+            
+            stats["total_rows"] += 1
 
+        stats["processed_files"] += 1
         wb.close()
 
     print("\n数据提取完成，正在生成班级文件...")
 
     # 按班级排序
     sorted_classes = sorted(class_data.keys(), key=lambda x: int(x) if x.isdigit() else x)
+    stats["generated_classes"] = len(sorted_classes)
     
     # 获取当前日期用于制表日期
     current_date = datetime.now().strftime("%Y-%m-%d")
@@ -114,3 +128,4 @@ def split_and_save(selected_files, sheet_index, sheet_name, header_row, class_co
         out_wb.save(out_file)
     
     print("\n所有班级文件保存完成!")
+    return stats
